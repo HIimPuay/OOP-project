@@ -201,6 +201,7 @@ public class MemoryGameController implements Initializable {
     @FXML
     void handleBackTheme(ActionEvent event) throws IOException {
         FXMLLoader fxmlLoader = new FXMLLoader(Main.class.getResource("Theme.fxml"));
+        cleanupCards();
 
         Parent root = fxmlLoader.load();
         mainMenuScene = new Scene(root, 800, 600);
@@ -219,13 +220,24 @@ public class MemoryGameController implements Initializable {
     }
 
     // ฟังก์ชัน setCardsInGame เพื่อรับรายการการ์ด
-    public void setCardsInGame(ArrayList<MemoryCard> cardsInGame) {
-        this.cardsInGame = cardsInGame;
-
-        // สุ่มการ์ดสำหรับเกม
-        Collections.shuffle(cardsInGame);
-
-        // เรียกฟังก์ชันสำหรับแสดงการ์ด
-        initializeImageView();
+    public void setCardsInGame(List<MemoryCard> cards) {
+        this.cardsInGame = new ArrayList<>(cards);
+        Collections.shuffle(this.cardsInGame); // สุ่มการ์ดก่อนเริ่มเกม
     }
+
+    public void cleanupCards() {
+        if (themeName != null && themeName.equals("CustomTheme")) {
+            // ลบการ์ดที่เก็บไว้ในโฟลเดอร์
+            for (MemoryCard card : cardsInGame) {
+                String cardPath = card.getImagePath();
+                if (cardPath != null && !cardPath.isEmpty()) {
+                    boolean deleted = ImageStorage.deleteCard(cardPath);
+                    if (!deleted) {
+                        System.out.println("Failed to delete card: " + cardPath);
+                    }
+                }
+            }
+        }
+    }
+
 }

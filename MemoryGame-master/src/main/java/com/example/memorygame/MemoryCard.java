@@ -1,8 +1,12 @@
 package com.example.memorygame;
 
+import javafx.scene.image.Image;
+
 public class MemoryCard extends Card {
     private boolean matched;
     private String themeName;
+    private String imagePath;
+    private Image customImage;
 
     public MemoryCard(String suit, String faceName) {
         super(suit, faceName);
@@ -23,6 +27,23 @@ public class MemoryCard extends Card {
 
     public void setThemeName(String themeName) {
         this.themeName = themeName;
+    }
+
+    public String getImagePath() {
+        return imagePath;
+    }
+
+    public void setImagePath(String imagePath) {
+        this.imagePath = imagePath;
+    }
+
+    public Image getCustomImage() {
+        return customImage;
+    }
+
+    // Setter for the custom image
+    public void setCustomImage(Image customImage) {
+        this.customImage = customImage;
     }
 
     /**

@@ -11,7 +11,6 @@ import javafx.scene.control.TextInputDialog;
 import javafx.scene.image.Image;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import com.example.memorygame.ImageStorage;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,7 +20,6 @@ import java.util.List;
 
 public class ThemeController {
 
-    private ArrayList<MemoryCard> defaultCards = new ArrayList<>();
     private ArrayList<MemoryCard> customCards = new ArrayList<>();
     private ArrayList<MemoryCard> cardsInGame = new ArrayList<>();
 
@@ -89,68 +87,54 @@ public class ThemeController {
 
     @FXML
     private void addCardSet(ActionEvent event) {
-        TextInputDialog dialog = new TextInputDialog();
-        dialog.setTitle("Theme Name");
-        dialog.setHeaderText("Enter a name for your theme");
+        // Ask for a theme name
+        TextInputDialog dialog = new TextInputDialog("CustomTheme");
+        dialog.setTitle("Add Card Set");
+        dialog.setHeaderText("Enter a theme name for your cards.");
         dialog.setContentText("Theme Name:");
 
-        String themeName = dialog.showAndWait().orElse(null);
-        if (themeName == null || themeName.trim().isEmpty()) {
-            showAlert(Alert.AlertType.WARNING, "Warning", "Theme name cannot be empty!");
-            return;
-        }
+        String themeName = dialog.showAndWait().orElse("DefaultTheme");
 
-        for (MemoryCard card : customCards) {
-            if (card.getThemeName().equalsIgnoreCase(themeName)) {
-                showAlert(Alert.AlertType.ERROR, "Error", "Theme '" + themeName + "' already exists!");
-                return;
-            }
-        }
-
+        // FileChooser to allow user to select multiple image files
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Select Card Images");
-        fileChooser.getExtensionFilters().addAll(
-                new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg"));
+        fileChooser.getExtensionFilters()
+                .addAll(new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg"));
+        List<File> selectedFiles = fileChooser
+                .showOpenMultipleDialog(((Node) event.getSource()).getScene().getWindow());
 
-        List<File> selectedFiles = fileChooser.showOpenMultipleDialog(
-                ((Node) event.getSource()).getScene().getWindow());
+        if (selectedFiles != null && !selectedFiles.isEmpty()) {
+            ArrayList<MemoryCard> newCards = new ArrayList<>();
+            try {
+                // Process each selected file
+                for (File file : selectedFiles) {
+                    String savedPath = ImageStorage.saveCardImage(file); // Save image to custom-images folder
+                    MemoryCard card = new MemoryCard(themeName, savedPath);
+                    card.setCustomImage(new javafx.scene.image.Image("file:" + savedPath)); // Set image
 
-        if (selectedFiles == null || selectedFiles.size() % 2 != 0) {
-            showAlert(Alert.AlertType.ERROR, "Error", "Please select an even number of images!");
-            return;
-        }
+                    // Duplicate the card for matching
+                    MemoryCard duplicateCard = new MemoryCard(themeName, savedPath);
+                    duplicateCard.setCustomImage(new javafx.scene.image.Image("file:" + savedPath)); // Set image
 
-        ArrayList<MemoryCard> newCards = new ArrayList<>();
-        ArrayList<String> savedImagePaths = new ArrayList<>();
-        try {
-            for (File file : selectedFiles) {
-                String imagePath = ImageStorage.saveImage(file); // ใช้ ImageStorage เพื่อบันทึกไฟล์
-                savedImagePaths.add(imagePath);
+                    // Add the original and duplicate cards to the list
+                    newCards.add(card);
+                    newCards.add(duplicateCard);
+                }
 
-                MemoryCard card = new MemoryCard(themeName, imagePath);
-                card.setCustomImage(new Image(new File(imagePath).toURI().toString()));
+                // Add new cards to the game
+                customCards.addAll(newCards);
+                updateGameCards(newCards);
 
-                MemoryCard duplicateCard = new MemoryCard(themeName, imagePath);
-                duplicateCard.setCustomImage(new Image(new File(imagePath).toURI().toString()));
+                showAlert(Alert.AlertType.INFORMATION, "Success", "Cards added successfully for theme: " + themeName);
 
-                newCards.add(card);
-                newCards.add(duplicateCard);
+                // Start the game with the new cards
+                startCustomGame(event, themeName);
+
+            } catch (IOException e) {
+                showAlert(Alert.AlertType.ERROR, "Error", "Failed to save images!");
+                e.printStackTrace();
             }
-            customCards.addAll(newCards);
-            updateGameCards(newCards);
-            showAlert(Alert.AlertType.INFORMATION, "Success",
-                    "Theme '" + themeName + "' added successfully! Images saved to: " +
-                            (ImageStorage.IS_DEVELOPMENT_MODE
-                                    ? ImageStorage.DEV_IMAGE_DIRECTORY
-                                    : ImageStorage.PROD_IMAGE_DIRECTORY));
-
-            startCustomGame(event, themeName);
-        } catch (IOException e) {
-            showAlert(Alert.AlertType.ERROR, "Error", "Failed to save images!");
-            for (String path : savedImagePaths) {
-                new File(path).delete();
-            }
-            e.printStackTrace();
+        } else {
+            System.out.println("No files selected.");
         }
     }
 

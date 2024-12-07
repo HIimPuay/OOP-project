@@ -23,7 +23,11 @@
                   <Button prefWidth="200.0" text="Theme 4" onAction="#handleStartLevel4" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
                </GridPane>
 
-                  <Button text="Add Card Set" onAction="#addCardSet" />
+               <GridPane hgap="20" vgap="20" alignment="CENTER">
+                  <Button prefWidth="200.0" text="Add Card Set" onAction="#addCardSet" GridPane.rowIndex="0" GridPane.columnIndex="0" />
+                  <!-- <Button prefWidth="200.0" text="Start your set" onAction="#startCustomGame" GridPane.rowIndex="0" GridPane.columnIndex="1" /> -->
+               </GridPane>
+
                   <Button mnemonicParsing="false" onAction="#handleBackToMainMenu" prefWidth="200.0" text="Back" />
 
             
