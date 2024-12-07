@@ -2,6 +2,7 @@ package com.example.memorygame;
 
 public class MemoryCard extends Card {
     private boolean matched;
+    private String themeName;
 
     public MemoryCard(String suit, String faceName) {
         super(suit, faceName);
@@ -14,6 +15,14 @@ public class MemoryCard extends Card {
 
     public void setMatched(boolean matched) {
         this.matched = matched;
+    }
+
+    public String getThemeName() {
+        return this.themeName;
+    }
+
+    public void setThemeName(String themeName) {
+        this.themeName = themeName;
     }
 
     /**

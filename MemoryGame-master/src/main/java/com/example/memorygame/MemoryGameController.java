@@ -11,6 +11,7 @@ import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.FlowPane;
+import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
@@ -19,6 +20,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.ResourceBundle;
 
 public class MemoryGameController implements Initializable {
@@ -32,12 +34,19 @@ public class MemoryGameController implements Initializable {
     @FXML
     private FlowPane imagesFlowPane;
 
+    @FXML
+    private Label levelLabel;
+
+    @FXML
+    private GridPane cardGrid;
+
     private ArrayList<MemoryCard> cardsInGame;
 
     private MemoryCard firstCard, secondCard;
     private int numOfGuess;
     private int numOfMatches;
     private int currentLevel;
+    private String themeName;
 
     @FXML
     private Label titleLabel; // เชื่อมโยงกับ fx:id="titleLabel"
@@ -203,4 +212,20 @@ public class MemoryGameController implements Initializable {
         stage.show();
     }
 
+    // ฟังก์ชัน setTheme เพื่อรับชื่อธีม
+    public void setTheme(String themeName) {
+        this.themeName = themeName;
+        levelLabel.setText("Theme: " + themeName); // อัปเดต Label ใน UI
+    }
+
+    // ฟังก์ชัน setCardsInGame เพื่อรับรายการการ์ด
+    public void setCardsInGame(ArrayList<MemoryCard> cardsInGame) {
+        this.cardsInGame = cardsInGame;
+
+        // สุ่มการ์ดสำหรับเกม
+        Collections.shuffle(cardsInGame);
+
+        // เรียกฟังก์ชันสำหรับแสดงการ์ด
+        initializeImageView();
+    }
 }

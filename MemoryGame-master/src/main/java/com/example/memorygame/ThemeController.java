@@ -7,9 +7,11 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
+import javafx.scene.control.TextInputDialog;
 import javafx.scene.image.Image;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import com.example.memorygame.ImageStorage;
 
 import java.io.File;
 import java.io.IOException;
@@ -40,7 +42,7 @@ public class ThemeController {
 
     @FXML
     void handleStartLevel4(ActionEvent event) {
-        startGameWithLevel(event, 4); // ส่งข้อมูลด่าน 4
+        startGameWithLevel(event, 4);
     }
 
     private void startGameWithLevel(ActionEvent event, int level) {
@@ -48,7 +50,7 @@ public class ThemeController {
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("memory-game.fxml"));
             Parent root = fxmlLoader.load();
             MemoryGameController controller = fxmlLoader.getController();
-            controller.setLevel(level); // ส่งระดับด่านไปยัง Controller
+            controller.setLevel(level);
 
             Scene scene = new Scene(root);
             Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
@@ -73,11 +75,38 @@ public class ThemeController {
         stage.show();
     }
 
-    // add card function จะทำให้เลือกภาพจากเครื่องเราได้
-    // อยากทำให้เชื่อมโยงกับโฟลเดอร์ custom-images และ user.home
-    // ที่สร้างไว้เพื่อเก็บภาพการ์ดลงไป
+    private void updateGameCards(List<MemoryCard> newCards) {
+        cardsInGame = new ArrayList<>(newCards);
+        Collections.shuffle(cardsInGame);
+    }
+
+    private void showAlert(Alert.AlertType alertType, String title, String content) {
+        Alert alert = new Alert(alertType);
+        alert.setTitle(title);
+        alert.setContentText(content);
+        alert.showAndWait();
+    }
+
     @FXML
     private void addCardSet(ActionEvent event) {
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("Theme Name");
+        dialog.setHeaderText("Enter a name for your theme");
+        dialog.setContentText("Theme Name:");
+
+        String themeName = dialog.showAndWait().orElse(null);
+        if (themeName == null || themeName.trim().isEmpty()) {
+            showAlert(Alert.AlertType.WARNING, "Warning", "Theme name cannot be empty!");
+            return;
+        }
+
+        for (MemoryCard card : customCards) {
+            if (card.getThemeName().equalsIgnoreCase(themeName)) {
+                showAlert(Alert.AlertType.ERROR, "Error", "Theme '" + themeName + "' already exists!");
+                return;
+            }
+        }
+
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Select Card Images");
         fileChooser.getExtensionFilters().addAll(
@@ -91,49 +120,57 @@ public class ThemeController {
             return;
         }
 
-        for (File file : selectedFiles) {
-            String imagePath = file.toURI().toString();
-            MemoryCard card = new MemoryCard("Custom", imagePath);
-            card.setCustomImage(new Image(imagePath));
+        ArrayList<MemoryCard> newCards = new ArrayList<>();
+        ArrayList<String> savedImagePaths = new ArrayList<>();
+        try {
+            for (File file : selectedFiles) {
+                String imagePath = ImageStorage.saveImage(file); // ใช้ ImageStorage เพื่อบันทึกไฟล์
+                savedImagePaths.add(imagePath);
 
-            MemoryCard duplicateCard = new MemoryCard("Custom", imagePath);
-            duplicateCard.setCustomImage(new Image(imagePath));
+                MemoryCard card = new MemoryCard(themeName, imagePath);
+                card.setCustomImage(new Image(new File(imagePath).toURI().toString()));
 
-            customCards.add(card);
-            customCards.add(duplicateCard);
+                MemoryCard duplicateCard = new MemoryCard(themeName, imagePath);
+                duplicateCard.setCustomImage(new Image(new File(imagePath).toURI().toString()));
+
+                newCards.add(card);
+                newCards.add(duplicateCard);
+            }
+            customCards.addAll(newCards);
+            updateGameCards(newCards);
+            showAlert(Alert.AlertType.INFORMATION, "Success",
+                    "Theme '" + themeName + "' added successfully! Images saved to: " +
+                            (ImageStorage.IS_DEVELOPMENT_MODE
+                                    ? ImageStorage.DEV_IMAGE_DIRECTORY
+                                    : ImageStorage.PROD_IMAGE_DIRECTORY));
+
+            startCustomGame(event, themeName);
+        } catch (IOException e) {
+            showAlert(Alert.AlertType.ERROR, "Error", "Failed to save images!");
+            for (String path : savedImagePaths) {
+                new File(path).delete();
+            }
+            e.printStackTrace();
         }
-
-        showAlert(Alert.AlertType.INFORMATION, "Success", "Custom card set added successfully!");
     }
 
-    @FXML
-    void startGameWithCustomOnly(ActionEvent event) {
-        updateGameCards(customCards);
-        playAgain();
-    }
+    private void startCustomGame(ActionEvent event, String themeName) {
+        try {
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("memory-game.fxml"));
+            Parent root = fxmlLoader.load();
+            MemoryGameController controller = fxmlLoader.getController();
 
-    @FXML
-    void startGameWithDefaultAndCustom(ActionEvent event) {
-        ArrayList<MemoryCard> combinedCards = new ArrayList<>(defaultCards);
-        combinedCards.addAll(customCards);
-        updateGameCards(combinedCards);
-        playAgain();
-    }
+            controller.setTheme(themeName);
+            controller.setCardsInGame(cardsInGame);
 
-    private void updateGameCards(List<MemoryCard> selectedCards) {
-        cardsInGame = new ArrayList<>(selectedCards);
-        Collections.shuffle(cardsInGame);
-    }
-
-    private void showAlert(Alert.AlertType alertType, String title, String content) {
-        Alert alert = new Alert(alertType);
-        alert.setTitle(title);
-        alert.setContentText(content);
-        alert.showAndWait();
-    }
-
-    private void playAgain() {
-        // Logic สำหรับเริ่มเกมใหม่ (เรียกจาก Controller หลัก)
-        System.out.println("New game started with " + cardsInGame.size() + " cards.");
+            Scene scene = new Scene(root);
+            Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+            stage.setTitle("Memory Game - Theme: " + themeName);
+            stage.setScene(scene);
+            stage.show();
+        } catch (IOException e) {
+            showAlert(Alert.AlertType.ERROR, "Error", "Failed to load memory-game.fxml!");
+            e.printStackTrace();
+        }
     }
 }

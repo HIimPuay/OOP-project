@@ -88,7 +88,7 @@ public class Card {
         this.customImage = customImage;
     }
 
-    public Image getCustoImage() {
+    public Image getCustomImage() {
         return customImage;
     }
 
